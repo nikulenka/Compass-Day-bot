@@ -55,3 +55,26 @@ def log_daily_mailing(tg_id, content):
         logging.error(f"Error logging mailing: {e}")
     finally:
         conn.close()
+
+def fetch_user_history(tg_id, days=3):
+    conn = get_db_connection()
+    if not conn:
+        return ""
+    
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT content 
+                FROM daily_logs 
+                WHERE tg_id = %s AND sent_at > NOW() - INTERVAL '3 days'
+                ORDER BY sent_at DESC
+            """, (tg_id,))
+            logs = cur.fetchall()
+            # Combine all previous contents into a single history string
+            history = "\n---\n".join([log[0] for log in logs])
+            return history
+    except Exception as e:
+        logging.error(f"Error fetching user history: {e}")
+        return ""
+    finally:
+        conn.close()
