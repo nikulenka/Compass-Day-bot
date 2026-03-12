@@ -24,7 +24,9 @@ class StreamlitLogHandler(logging.Handler):
     def emit(self, record):
         msg = self.format(record)
         self.logs.append(msg)
-        self.widget.code("\n".join(self.logs[-15:]))
+        # Fix: use safe slice
+        recent_logs = self.logs[-15:]
+        self.widget.code("\n".join(recent_logs))
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

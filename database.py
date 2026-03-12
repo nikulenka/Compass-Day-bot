@@ -7,20 +7,17 @@ import logging
 def get_db_connection():
     try:
         raw_host = os.getenv("DB_HOST", "compass-day-vitalyn.db-msk0.amvera.tech")
-        # Sanitize host: remove http://, https://, and trailing slashes
         clean_host = raw_host.replace("http://", "").replace("https://", "").split("/")[0].split(":")[0]
+        port = os.getenv("DB_PORT", "5432")
+        user = os.getenv("DB_USER", "compass-admin")
+        password = os.getenv("DB_PASSWORD", "Land40Us")
+        dbname = os.getenv("DB_NAME", "Compass-Day-DB")
         
-        logging.info(f"Connecting to host: {clean_host} (Port: {os.getenv('DB_PORT', '5432')}, DB: {os.getenv('DB_NAME', 'Compass-Day-DB')})")
+        # Build standard PG URL
+        db_url = f"postgresql://{user}:{password}@{clean_host}:{port}/{dbname}?sslmode=require"
         
-        conn = psycopg2.connect(
-            host=clean_host,
-            port=os.getenv("DB_PORT", "5432"),
-            user=os.getenv("DB_USER", "compass-admin"),
-            password=os.getenv("DB_PASSWORD", "Land40Us"),
-            database=os.getenv("DB_NAME", "Compass-Day-DB"),
-            sslmode='disable',
-            connect_timeout=20
-        )
+        logging.info(f"Connecting to: {clean_host} via URL format")
+        conn = psycopg2.connect(db_url, connect_timeout=20)
         return conn
     except Exception as e:
         logging.error(f"Error connecting to database: {e}")
