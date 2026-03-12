@@ -44,7 +44,7 @@ def daily_loop_http(req: https_fn.Request) -> https_fn.Response:
     asyncio.run(run_daily_loop())
     return https_fn.Response("Daily loop executed.")
 
-@scheduler_fn.on_schedule(schedule="0 19 * * *", time_zone="UTC")
+@scheduler_fn.on_schedule(schedule="15 21 * * *", time_zone="UTC")
 def daily_loop_scheduled(event: scheduler_fn.ScheduledEvent) -> None:
     """
     Scheduled trigger (runs at 19:00 UTC).

@@ -39,4 +39,5 @@ git push -u origin main
 ```
 
 ### 6. Настройка Cloud Scheduler
-Функция настроена на запуск в 19:00 UTC ежедневно. Проверить статус можно в Firebase Console -> Functions -> Scheduling.
+Функция настроена на запуск в 21:15 UTC ежедневно.
+ Проверить статус можно в Firebase Console -> Functions -> Scheduling.
