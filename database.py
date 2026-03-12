@@ -10,14 +10,16 @@ def get_db_connection():
         # Sanitize host: remove http://, https://, and trailing slashes
         clean_host = raw_host.replace("http://", "").replace("https://", "").split("/")[0].split(":")[0]
         
+        logging.info(f"Connecting to host: {clean_host} (Port: {os.getenv('DB_PORT', '5432')}, DB: {os.getenv('DB_NAME', 'Compass-Day-DB')})")
+        
         conn = psycopg2.connect(
             host=clean_host,
             port=os.getenv("DB_PORT", "5432"),
             user=os.getenv("DB_USER", "compass-admin"),
             password=os.getenv("DB_PASSWORD", "Land40Us"),
             database=os.getenv("DB_NAME", "Compass-Day-DB"),
-            sslmode='allow',
-            connect_timeout=10
+            sslmode='require',
+            connect_timeout=20
         )
         return conn
     except Exception as e:
