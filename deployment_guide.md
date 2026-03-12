@@ -1,43 +1,40 @@
-# Инструкция по деплою и подготовке к GitHub
+# Инструкция по деплою на Streamlit.io
 
-### 1. Структура проекта
-Теперь проект организован правильно для Firebase:
-* `functions/` — папка с кодом функции Python.
-* `firebase.json` — конфигурация Firebase.
-* `.gitignore` — исключает секреты из GitHub.
-
-### 2. Подготовка Firebase
-1. Установите Firebase CLI: `npm install -g firebase-tools`.
-2. Авторизуйтесь: `firebase login`.
-3. Инициализируйте проект (уже сделано частично, но для связи с вашим Firebase ID): 
-   `firebase use --add [имя-вашего-проекта]`
-
-### 3. Настройка переменных окружения (Секреты)
-**ВАЖНО:** Никогда не загружайте ключи в GitHub! 
-Я создал файл `functions/.env` локально. Он добавлен в `.gitignore` и не попадет в репозиторий.
-
-Для деплоя в Firebase используйте один из способов:
-* **Способ А (.env):** Firebase автоматически подхватит `.env` файл при деплое, если он находится в папке `functions/`.
-* **Способ Б (Google Cloud Secret Manager):** Рекомендуется для продакшена.
-
-### 4. Деплой
-Запустите команду из корня проекта:
+### 1. Подготовка и GitHub
+Проект уже настроен для работы со Streamlit. Убедитесь, что все последние изменения отправлены в GitHub:
 ```bash
-firebase deploy --only functions
-```
-
-### 5. Загрузка на GitHub
-1. Создайте новый репозиторий на GitHub.
-2. Выполните команды в терминале:
-```bash
-git init
 git add .
-git commit -m "Initial commit: Compass-Day Daily Loop"
-git branch -M main
-git remote add origin https://github.com/ВАШ_ЛОГИН/ВАШ_РЕПО.git
-git push -u origin main
+git commit -m "Migrate to Streamlit"
+git push origin main
 ```
 
-### 6. Настройка Cloud Scheduler
-Функция настроена на запуск в 21:15 UTC ежедневно.
- Проверить статус можно в Firebase Console -> Functions -> Scheduling.
+### 2. Деплой на Streamlit Cloud
+1. Зайдите на [share.streamlit.io](https://share.streamlit.io).
+2. Авторизуйтесь через GitHub.
+3. Нажмите **"New app"**.
+4. Выберите ваш репозиторий: `nikulenka/Compass-Day-bot`.
+5. Main file path: `streamlit_app.py`.
+6. Нажмите **"Deploy!"**.
+
+### 3. Настройка Секретов (Secrets)
+В консоли Streamlit после деплоя (или во время):
+1. Нажмите **Settings** -> **Secrets**.
+2. Вставьте все переменные в формате TOML (как в примере ниже):
+
+```toml
+DB_HOST = "compass-day-vitalyn.db-msk0.amvera.tech"
+DB_PORT = "5432"
+DB_USER = "compass-admin"
+DB_PASSWORD = "..."
+DB_NAME = "compass-admin"
+GEMINI_API_KEY = "..."
+TELEGRAM_BOT_TOKEN = "..."
+```
+
+### 4. Автоматизация (Cron)
+Streamlit Cloud предназначен для интерактивных приложений. Чтобы рассылка уходила автоматически:
+* **Вариант А:** Заходите на страницу вашего приложения в 21:15 и нажимайте кнопку "Запустить рассылку".
+* **Вариант Б (Продвинутый):** Можно добавить GitHub Action, который будет раз в день запускать файл `streamlit_app.py` (или его логику в отдельном скрипте). Это будет на 100% бесплатно и автоматически.
+
+### 5. Ручной запуск
+Просто нажмите кнопку **"🚀 Запустить рассылку сейчас"** в интерфейсе вашего Streamlit приложения.
