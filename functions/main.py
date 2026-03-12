@@ -44,10 +44,10 @@ def daily_loop_http(req: https_fn.Request) -> https_fn.Response:
     asyncio.run(run_daily_loop())
     return https_fn.Response("Daily loop executed.")
 
-@scheduler_fn.on_schedule(schedule="15 21 * * *", time_zone="UTC")
+@scheduler_fn.on_schedule(schedule="15 20 * * *", time_zone="UTC")
 def daily_loop_scheduled(event: scheduler_fn.ScheduledEvent) -> None:
     """
-    Scheduled trigger (runs at 21:15 UTC).
+    Scheduled trigger (runs at 20:15 UTC, which is 21:15 in Serbia winter time).
     Note: Ideally, this should handle user-specific timezones, 
     but for the initial migration, we set a global time or 
     trigger a logic that checks user timezones in the DB.
