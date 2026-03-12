@@ -11,13 +11,23 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 async def get_expert_response(prompt):
-    """Call Gemini API with rate limiting."""
+    """Call Gemini API with rate limiting and diagnostic logging for 404s."""
     try:
         response = model.generate_content(prompt)
         await asyncio.sleep(4) 
         return response.text.strip()
     except Exception as e:
-        logging.error(f"Gemini API error: {e}")
+        error_msg = str(e)
+        logging.error(f"Gemini API error: {error_msg}")
+        
+        if "404" in error_msg:
+            try:
+                logging.info("Attempting to list available models for debugging...")
+                available_models = [m.name for m in genai.list_models()]
+                logging.info(f"Available models: {available_models}")
+            except Exception as le:
+                logging.error(f"Failed to list models: {le}")
+                
         return ""
 
 async def generate_daily_content(user_data):
