@@ -12,7 +12,7 @@ def get_db_connection():
             user=os.getenv("DB_USER", "compass-admin"),
             password=os.getenv("DB_PASSWORD", "Land40Us"),
             database=os.getenv("DB_NAME", "compass-admin"),
-            sslmode='require'
+            sslmode='prefer'
         )
         return conn
     except Exception as e:
