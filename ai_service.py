@@ -10,12 +10,31 @@ from prompts import PSYCHOLOGIST_PROMPT, STYLIST_PROMPT, NUTRITIONIST_PROMPT, SY
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel('gemini-2.5-flash')
 
+import re
+
+def clean_html(text):
+    """Deep clean HTML to strictly follow Telegram's allowed tags."""
+    # Forbidden tags that AI loves but Telegram hates
+    forbidden = ['<ul>', '</ul>', '<li>', '</li>', '<p>', '</p>', '<br>', '<br/>', '<h1>', '</h1>', '<h2>', '</h2>', '<h3>', '</h3>']
+    for tag in forbidden:
+        text = text.replace(tag, '')
+    
+    # Remove any extra nested or complex tags that aren't b, i, code, u, s, pre, a
+    # This is a safety net
+    allowed_pattern = r'<(?!/?(b|strong|i|em|u|ins|s|strike|del|code|pre|a|blockquote|span)\b)[^>]*>'
+    text = re.sub(allowed_pattern, '', text)
+    
+    return text.strip()
+
 async def get_expert_response(prompt):
-    """Call Gemini API with rate limiting and diagnostic logging for 404s."""
+    """Call Gemini API with rate limiting and cleanup."""
     try:
         response = model.generate_content(prompt)
         await asyncio.sleep(4) 
-        return response.text.strip()
+        output = response.text.strip()
+        # Initial cleanup of common markdown artifacts
+        output = output.replace('```html', '').replace('```', '')
+        return output
     except Exception as e:
         error_msg = str(e)
         logging.error(f"Gemini API error: {error_msg}")
@@ -76,9 +95,7 @@ async def generate_daily_content(user_data):
         nutr_output=nutr_output
     )
     final_html = await get_expert_response(synth_input)
-
-    # Try to extract a color if needed, otherwise send None
-    # (Synthesizer prompt could be updated to return JSON with color if required)
+    final_html = clean_html(final_html)
     
     return {
         'html': final_html,
