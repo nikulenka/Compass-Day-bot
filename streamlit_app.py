@@ -2,7 +2,7 @@
 import streamlit as st
 import asyncio
 import logging
-from database import fetch_active_users, log_daily_mailing
+from database import fetch_active_users, log_daily_mailing, get_db_connection
 from ai_service import generate_daily_content
 from telegram_service import send_telegram_message
 import datetime
@@ -70,8 +70,20 @@ with col1:
 
 with col2:
     st.write("**Статус системы:**")
-    st.write("✅ База данных подключена")
-    st.write("✅ Gemini API готов")
+    
+    # DB Check
+    db_conn = get_db_connection()
+    if db_conn:
+        st.write("✅ База данных подключена")
+        db_conn.close()
+    else:
+        st.write("❌ Ошибка подключения к базе")
+
+    # Gemini Check
+    if os.getenv("GEMINI_API_KEY"):
+        st.write("✅ Gemini API ключ найден")
+    else:
+        st.write("❌ Gemini API ключ не настроен")
 
 st.divider()
 st.subheader("📋 Последние логи")
