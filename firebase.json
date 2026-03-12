@@ -1,0 +1,13 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "venv",
+        ".env",
+        "__pycache__"
+      ]
+    }
+  ]
+}

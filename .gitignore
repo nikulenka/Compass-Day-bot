@@ -1,0 +1,16 @@
+# Firebase
+.firebase/
+functions/venv/
+functions/__pycache__/
+*.log
+.env
+
+# Python
+*.pyc
+__pycache__/
+venv/
+.venv/
+
+# Secrets
+.env
+.python-version
