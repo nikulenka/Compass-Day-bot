@@ -51,27 +51,40 @@ async def get_expert_response(prompt):
 
 async def generate_daily_content(user_data):
     """
-    Implements Prompt Chaining and returns structured data for logging.
+    Implements Prompt Chaining with new prompts.txt logic.
     """
     name = user_data['name']
-    birth_date = user_data['birth_date']
+    birth_date = str(user_data['birth_date'])
     occupation = user_data['occupation']
     tg_id = user_data['tg_id']
 
-    # 1. Fetch History
+    # 1. Date calculation
+    import datetime
+    tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
+    tomorrow_date = tomorrow.strftime("%d.%m.%Y")
+    
+    # Russian day names
+    days_ru = {
+        "Monday": "понедельник", "Tuesday": "вторник", "Wednesday": "среда",
+        "Thursday": "четверг", "Friday": "пятница", "Saturday": "суббота", "Sunday": "воскресенье"
+    }
+    tomorrow_day = days_ru.get(tomorrow.strftime("%A"), "")
+
+    # 2. Fetch History
     history = fetch_user_history(tg_id, days=3)
 
-    # 2. Psychologist
+    # 3. Psychologist
     psych_input = PSYCHOLOGIST_PROMPT.format(
         name=name, 
         birth_date=birth_date,
+        tomorrow_date=tomorrow_date,
         history=history
     )
     psych_output = await get_expert_response(psych_input)
     if not psych_output:
         return None
 
-    # 3. Stylist
+    # 4. Stylist
     stylist_input = STYLIST_PROMPT.format(
         name=name, 
         psych_output=psych_output, 
@@ -80,16 +93,21 @@ async def generate_daily_content(user_data):
     )
     stylist_output = await get_expert_response(stylist_input)
 
-    # 4. Nutritionist
+    # 5. Nutritionist
     nutr_input = NUTRITIONIST_PROMPT.format(
+        name=name,
+        occupation=occupation,
         psych_output=psych_output,
+        tomorrow_date=tomorrow_date,
         history=history
     )
     nutr_output = await get_expert_response(nutr_input)
 
-    # 5. Synthesizer
+    # 6. Synthesizer
     synth_input = SYNTHESIZER_PROMPT.format(
         name=name,
+        tomorrow_date=tomorrow_date,
+        tomorrow_day=tomorrow_day,
         psych_output=psych_output,
         stylist_output=stylist_output,
         nutr_output=nutr_output
