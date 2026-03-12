@@ -61,8 +61,8 @@ def log_daily_mailing(tg_id, content):
     try:
         # pg8000.native uses colon for parameters
         conn.run(
-            "INSERT INTO daily_logs (tg_id, content, sent_at) VALUES (:tg_id, :content, NOW())",
-            tg_id=tg_id, content=content
+            "INSERT INTO daily_logs (tg_id, recommendation_text, sent_at) VALUES (:tg_id, :text, NOW())",
+            tg_id=tg_id, text=content
         )
     except Exception as e:
         logging.error(f"Error logging mailing: {e}")
@@ -76,7 +76,7 @@ def fetch_user_history(tg_id, days=3):
     try:
         # Note: INTERVAL parameterization can be tricky, using simple concatenation for the constant part
         rows = conn.run(
-            "SELECT content FROM daily_logs WHERE tg_id = :tg_id AND sent_at > NOW() - INTERVAL '3 days' ORDER BY sent_at DESC",
+            "SELECT recommendation_text FROM daily_logs WHERE tg_id = :tg_id AND sent_at > NOW() - INTERVAL '3 days' ORDER BY sent_at DESC",
             tg_id=tg_id
         )
         history = "\n---\n".join([r[0] for r in rows])
