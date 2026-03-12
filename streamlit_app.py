@@ -7,6 +7,10 @@ from ai_service import generate_daily_content
 from telegram_service import send_telegram_message, get_bot_status
 import datetime
 import os
+from dotenv import load_dotenv
+
+# Load environment variables for local development
+load_dotenv()
 
 st.set_page_config(page_title="Compass-Day Dashboard", page_icon="🌟")
 

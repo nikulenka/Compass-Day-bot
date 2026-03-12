@@ -2,4 +2,5 @@ pg8000
 google-generativeai
 python-telegram-bot
 asyncio
+python-dotenv
 streamlit

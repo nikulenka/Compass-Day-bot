@@ -22,13 +22,14 @@ git push origin main
 2. Вставьте все переменные в формате TOML (скопируйте блок ниже полностью):
 
 ```toml
-DB_HOST = "compass-day-vitalyn.db-msk0.amvera.tech"
-DB_PORT = "5432"
-DB_USER = "compass-admin"
-DB_PASSWORD = "Land40Us"
-DB_NAME = "compass-admin"
-GEMINI_API_KEY = "AIzaSyAXcyEiNfpYBp_WMjoqnKR6fqi5nt4JHFs"
-TELEGRAM_BOT_TOKEN = "8368814716:AAGLB8B0JDhqUeoRoGcewIxgnGtgvMoSqCc"
+# Вставьте сюда ваши данные из файла .env в формате:
+DB_HOST = "..."
+DB_PORT = "..."
+DB_USER = "..."
+DB_PASSWORD = "..."
+DB_NAME = "..."
+GEMINI_API_KEY = "..."
+TELEGRAM_BOT_TOKEN = "..."
 ```
 
 ### 4. Автоматизация (Cron)
