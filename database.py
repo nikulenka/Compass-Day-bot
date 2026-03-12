@@ -6,13 +6,18 @@ import logging
 
 def get_db_connection():
     try:
+        raw_host = os.getenv("DB_HOST", "compass-day-vitalyn.db-msk0.amvera.tech")
+        # Sanitize host: remove http://, https://, and trailing slashes
+        clean_host = raw_host.replace("http://", "").replace("https://", "").split("/")[0].split(":")[0]
+        
         conn = psycopg2.connect(
-            host=os.getenv("DB_HOST", "compass-day-vitalyn.db-msk0.amvera.tech"),
+            host=clean_host,
             port=os.getenv("DB_PORT", "5432"),
             user=os.getenv("DB_USER", "compass-admin"),
             password=os.getenv("DB_PASSWORD", "Land40Us"),
             database=os.getenv("DB_NAME", "Compass-Day-DB"),
-            sslmode='prefer'
+            sslmode='allow',
+            connect_timeout=10
         )
         return conn
     except Exception as e:
