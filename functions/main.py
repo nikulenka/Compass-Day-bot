@@ -47,7 +47,7 @@ def daily_loop_http(req: https_fn.Request) -> https_fn.Response:
 @scheduler_fn.on_schedule(schedule="15 21 * * *", time_zone="UTC")
 def daily_loop_scheduled(event: scheduler_fn.ScheduledEvent) -> None:
     """
-    Scheduled trigger (runs at 19:00 UTC).
+    Scheduled trigger (runs at 21:15 UTC).
     Note: Ideally, this should handle user-specific timezones, 
     but for the initial migration, we set a global time or 
     trigger a logic that checks user timezones in the DB.
