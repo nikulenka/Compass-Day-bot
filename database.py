@@ -18,7 +18,7 @@ def get_db_connection():
             user=os.getenv("DB_USER", "compass-admin"),
             password=os.getenv("DB_PASSWORD", "Land40Us"),
             database=os.getenv("DB_NAME", "Compass-Day-DB"),
-            sslmode='require',
+            sslmode='disable',
             connect_timeout=20
         )
         return conn
