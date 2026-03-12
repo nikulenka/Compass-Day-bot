@@ -22,3 +22,16 @@ async def send_telegram_message(tg_id, html_content):
     except Exception as e:
         logging.error(f"Error sending Telegram message to {tg_id}: {e}")
         return False
+
+async def get_bot_status():
+    """Verify bot token and connection."""
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if not token:
+        return False, "Token missing"
+    try:
+        from telegram import Bot
+        bot = Bot(token=token)
+        me = await bot.get_me()
+        return True, f"@{me.username}"
+    except Exception as e:
+        return False, str(e)
