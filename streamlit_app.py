@@ -4,7 +4,7 @@ import asyncio
 import logging
 from database import fetch_active_users, log_daily_mailing, get_db_connection
 from ai_service import generate_daily_content
-from telegram_service import send_telegram_message
+from telegram_service import send_telegram_message, get_bot_status
 import datetime
 import os
 
@@ -73,18 +73,28 @@ with col2:
     st.write("**Статус системы:**")
     
     # DB Check
-    db_conn = get_db_connection()
-    if db_conn:
-        st.write("✅ База данных подключена")
-        db_conn.close()
-    else:
-        st.write("❌ Ошибка подключения к базе")
+    try:
+        db_conn = get_db_connection()
+        if db_conn:
+            st.success("✅ База данных подключена")
+            db_conn.close()
+        else:
+            st.error("❌ База: Ошибка подключения")
+    except Exception as e:
+        st.error(f"❌ База: {str(e)}")
 
     # Gemini Check
     if os.getenv("GEMINI_API_KEY"):
-        st.write("✅ Gemini API ключ найден")
+        st.success("✅ Gemini API готов")
     else:
-        st.write("❌ Gemini API ключ не настроен")
+        st.error("❌ Gemini: Ключ не найден")
+
+    # Telegram Check
+    tg_ok, tg_msg = asyncio.run(get_bot_status())
+    if tg_ok:
+        st.success(f"✅ Бот активен: {tg_msg}")
+    else:
+        st.error(f"❌ Бот: {tg_msg}")
 
 st.divider()
 st.subheader("📋 Последние логи")
