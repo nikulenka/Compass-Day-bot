@@ -6,6 +6,7 @@ from database import fetch_active_users, log_daily_mailing, get_db_connection
 from ai_service import generate_daily_content
 from telegram_service import send_telegram_message
 import datetime
+import os
 
 st.set_page_config(page_title="Compass-Day Dashboard", page_icon="🌟")
 
