@@ -6,14 +6,14 @@ import logging
 
 def get_db_connection():
     try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST", "compass-day-vitalyn.db-msk0.amvera.tech"),
-            port=os.getenv("DB_PORT", "5432"),
-            user=os.getenv("DB_USER", "compass-admin"),
-            password=os.getenv("DB_PASSWORD", "Land40Us"),
-            database=os.getenv("DB_NAME", "Compass-Day-DB"),
-            sslmode='prefer'
-        )
+        host = os.getenv("DB_HOST", "compass-day-vitalyn.db-msk0.amvera.tech")
+        port = os.getenv("DB_PORT", "5432")
+        user = os.getenv("DB_USER", "compass-admin")
+        password = os.getenv("DB_PASSWORD", "Land40Us")
+        dbname = os.getenv("DB_NAME", "Compass-Day-DB")
+        
+        dsn = f"dbname={dbname} user={user} password={password} host={host} port={port} sslmode=require"
+        conn = psycopg2.connect(dsn)
         return conn
     except Exception as e:
         logging.error(f"Error connecting to database: {e}")
