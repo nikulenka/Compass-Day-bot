@@ -19,16 +19,16 @@ git push origin main
 ### 3. Настройка Секретов (Secrets)
 В консоли Streamlit после деплоя (или во время):
 1. Нажмите **Settings** -> **Secrets**.
-2. Вставьте все переменные в формате TOML (как в примере ниже):
+2. Вставьте все переменные в формате TOML (скопируйте блок ниже полностью):
 
 ```toml
 DB_HOST = "compass-day-vitalyn.db-msk0.amvera.tech"
 DB_PORT = "5432"
 DB_USER = "compass-admin"
-DB_PASSWORD = "..."
+DB_PASSWORD = "Land40Us"
 DB_NAME = "compass-admin"
-GEMINI_API_KEY = "..."
-TELEGRAM_BOT_TOKEN = "..."
+GEMINI_API_KEY = "AIzaSyAXcyEiNfpYBp_WMjoqnKR6fqi5nt4JHFs"
+TELEGRAM_BOT_TOKEN = "8368814716:AAGLB8B0JDhqUeoRoGcewIxgnGtgvMoSqCc"
 ```
 
 ### 4. Автоматизация (Cron)
