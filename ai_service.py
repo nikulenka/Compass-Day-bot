@@ -3,7 +3,7 @@ import google.generativeai as genai
 import os
 import asyncio
 import logging
-from database import fetch_active_users, log_daily_mailing, fetch_user_history
+from database import fetch_user_history
 from prompts import PSYCHOLOGIST_PROMPT, STYLIST_PROMPT, NUTRITIONIST_PROMPT, SYNTHESIZER_PROMPT
 
 # Configure Gemini
@@ -14,8 +14,6 @@ async def get_expert_response(prompt):
     """Call Gemini API with rate limiting."""
     try:
         response = model.generate_content(prompt)
-        # Gemini Free Tier limit is roughly 15 RPM. 
-        # Adding a small delay to stay safe when processing multiple users.
         await asyncio.sleep(4) 
         return response.text.strip()
     except Exception as e:
@@ -24,17 +22,17 @@ async def get_expert_response(prompt):
 
 async def generate_daily_content(user_data):
     """
-    Implements Prompt Chaining:
-    Psychologist -> Stylist & Nutritionist -> Synthesizer
+    Implements Prompt Chaining and returns structured data for logging.
     """
     name = user_data['name']
     birth_date = user_data['birth_date']
     occupation = user_data['occupation']
+    tg_id = user_data['tg_id']
 
-    # 0. Fetch History
-    history = fetch_user_history(user_data['tg_id'], days=3)
+    # 1. Fetch History
+    history = fetch_user_history(tg_id, days=3)
 
-    # 1. Psychologist
+    # 2. Psychologist
     psych_input = PSYCHOLOGIST_PROMPT.format(
         name=name, 
         birth_date=birth_date,
@@ -44,7 +42,7 @@ async def generate_daily_content(user_data):
     if not psych_output:
         return None
 
-    # 2. Stylist (depends on Psychologist)
+    # 3. Stylist
     stylist_input = STYLIST_PROMPT.format(
         name=name, 
         psych_output=psych_output, 
@@ -53,14 +51,14 @@ async def generate_daily_content(user_data):
     )
     stylist_output = await get_expert_response(stylist_input)
 
-    # 3. Nutritionist (depends on Psychologist)
+    # 4. Nutritionist
     nutr_input = NUTRITIONIST_PROMPT.format(
         psych_output=psych_output,
         history=history
     )
     nutr_output = await get_expert_response(nutr_input)
 
-    # 4. Synthesizer (collects everything)
+    # 5. Synthesizer
     synth_input = SYNTHESIZER_PROMPT.format(
         name=name,
         psych_output=psych_output,
@@ -69,4 +67,13 @@ async def generate_daily_content(user_data):
     )
     final_html = await get_expert_response(synth_input)
 
-    return final_html
+    # Try to extract a color if needed, otherwise send None
+    # (Synthesizer prompt could be updated to return JSON with color if required)
+    
+    return {
+        'html': final_html,
+        'psych': psych_output,
+        'stylist': stylist_output,
+        'nutr': nutr_output,
+        'color': None # Default for now
+    }

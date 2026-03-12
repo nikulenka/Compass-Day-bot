@@ -1,6 +1,7 @@
 import pg8000.native
 import os
 import logging
+from datetime import datetime
 
 def get_db_connection():
     try:
@@ -13,7 +14,6 @@ def get_db_connection():
         
         logging.info(f"Connecting to: {clean_host} via pg8000")
         
-        # pg8000.native handles SSL negotiation elegantly
         conn = pg8000.native.Connection(
             user=user,
             password=password,
@@ -32,8 +32,7 @@ def fetch_active_users():
     if not conn:
         return []
     try:
-        # pg8000 returns list of lists.
-        # Current DB columns: tg_id, name, birth_date, occupation
+        # Schema matches: tg_id, name, birth_date, occupation, onboarding_step
         rows = conn.run("""
             SELECT tg_id, name, birth_date, occupation 
             FROM users 
@@ -54,33 +53,48 @@ def fetch_active_users():
     finally:
         conn.close()
 
-def log_daily_mailing(tg_id, content):
+def log_daily_mailing(tg_id, psych, stylist, nutr, color_hex=None):
+    """Logs the structured expert recommendations to the DB."""
     conn = get_db_connection()
     if not conn:
         return
     try:
-        # pg8000.native uses colon for parameters
-        conn.run(
-            "INSERT INTO daily_logs (tg_id, recommendation_text, sent_at) VALUES (:tg_id, :text, NOW())",
-            tg_id=tg_id, text=content
-        )
+        # Schema: user_id, psychologist_output, stylist_output, nutritionist_output, color_hex, created_at
+        conn.run("""
+            INSERT INTO daily_logs 
+            (user_id, psychologist_output, stylist_output, nutritionist_output, color_hex, created_at, log_date) 
+            VALUES (:uid, :p_out, :s_out, :n_out, :color, NOW(), CURRENT_DATE)
+        """, 
+        uid=tg_id, 
+        p_out=psych, 
+        s_out=stylist, 
+        n_out=nutr, 
+        color=color_hex)
     except Exception as e:
         logging.error(f"Error logging mailing: {e}")
     finally:
         conn.close()
 
 def fetch_user_history(tg_id, days=3):
+    """Fetches and combines history for AI context."""
     conn = get_db_connection()
     if not conn:
         return ""
     try:
-        # Note: INTERVAL parameterization can be tricky, using simple concatenation for the constant part
-        rows = conn.run(
-            "SELECT recommendation_text FROM daily_logs WHERE tg_id = :tg_id AND sent_at > NOW() - INTERVAL '3 days' ORDER BY sent_at DESC",
-            tg_id=tg_id
-        )
-        history = "\n---\n".join([r[0] for r in rows])
-        return history
+        # Schema columns: psychologist_output, stylist_output, nutritionist_output
+        rows = conn.run("""
+            SELECT psychologist_output, stylist_output, nutritionist_output 
+            FROM daily_logs 
+            WHERE user_id = :uid AND created_at > NOW() - INTERVAL '3 days'
+            ORDER BY created_at DESC
+        """, uid=tg_id)
+        
+        history_parts = []
+        for r in rows:
+            combined = f"Психолог: {r[0]}\nСтилист: {r[1]}\nНутрициолог: {r[2]}"
+            history_parts.append(combined)
+            
+        return "\n---\n".join(history_parts)
     except Exception as e:
         logging.error(f"Error fetching user history: {e}")
         return ""

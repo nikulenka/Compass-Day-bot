@@ -46,11 +46,17 @@ async def run_daily_loop():
         st.write(f"🔄 Обработка: {user['name']} ({tg_id})")
         
         try:
-            content = await generate_daily_content(user)
-            if content:
-                success = await send_telegram_message(tg_id, content)
+            result = await generate_daily_content(user)
+            if result and result.get('html'):
+                success = await send_telegram_message(tg_id, result['html'])
                 if success:
-                    log_daily_mailing(tg_id, content)
+                    log_daily_mailing(
+                        tg_id, 
+                        result['psych'], 
+                        result['stylist'], 
+                        result['nutr'], 
+                        result['color']
+                    )
                     st.success(f"✅ Отправлено: {user['name']}")
                 else:
                     st.error(f"❌ Ошибка отправки: {user['name']}")
