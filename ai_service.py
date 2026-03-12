@@ -8,7 +8,7 @@ from prompts import PSYCHOLOGIST_PROMPT, STYLIST_PROMPT, NUTRITIONIST_PROMPT, SY
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 async def get_expert_response(prompt):
     """Call Gemini API with rate limiting and diagnostic logging for 404s."""
