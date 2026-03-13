@@ -21,14 +21,15 @@ st.set_page_config(page_title="Compass-Day Control Panel", page_icon="🧭", lay
 def load_all_settings():
     """Loads settings from DB into session state."""
     return {
-        "provider": get_setting("ai_provider", "Gemini"),
-        "model": get_setting("ai_model", "gemini-2.0-flash"),
-        "mailing_time": get_setting("mailing_time", "19:15"),
-        "last_run": get_setting("last_run_date", "")
+        "provider": str(get_setting("ai_provider", "Gemini") or "Gemini"),
+        "model": str(get_setting("ai_model", "gemini-2.0-flash") or "gemini-2.0-flash"),
+        "mailing_time": str(get_setting("mailing_time", "19:15") or "19:15"),
+        "last_run": str(get_setting("last_run_date", "") or "")
     }
 
-# Initialize Session State
-if 'config' not in st.session_state:
+# Initialize Session State - Robust Check
+REQUIRED_KEYS = ["provider", "model", "mailing_time", "last_run"]
+if 'config' not in st.session_state or any(k not in st.session_state.config for k in REQUIRED_KEYS):
     st.session_state.config = load_all_settings()
 
 # --- Custom Styling ---
