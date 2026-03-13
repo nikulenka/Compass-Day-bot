@@ -4,3 +4,4 @@ python-telegram-bot
 asyncio
 python-dotenv
 streamlit
+openai
