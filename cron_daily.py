@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 # Load environment variables (for local testing)
 load_dotenv()
 
-from database import fetch_active_users, log_daily_mailing
+from database import fetch_active_users, log_daily_mailing, get_setting, set_setting
 from ai_service import generate_daily_content
 from telegram_service import send_telegram_message
+from datetime import datetime
 
 # Setup logging
 logging.basicConfig(
@@ -20,18 +21,30 @@ logger = logging.getLogger(__name__)
 
 async def run_cron_mailing():
     """Main entry point for the daily automated mailing."""
-    logger.info("--- Starting Daily Automated Mailing ---")
+    logger.info("--- Starting Daily Automated Mailing Check ---")
     
-    # Configuration: Priority 1: ENV (GitHub Secrets), Priority 2: config_ui.json (Streamlit), Priority 3: Defaults
-    import json
-    ui_cfg = {}
-    if os.path.exists("config_ui.json"):
-        try:
-            with open("config_ui.json", "r") as f: ui_cfg = json.load(f)
-        except: pass
+    # 1. Check Schedule from DB
+    mailing_time_str = get_setting("mailing_time", "19:15")
+    last_run_date = get_setting("last_run_date", "")
+    
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    current_time_str = now.strftime("%H:%M")
+    
+    logger.info(f"Target Time: {mailing_time_str} | Current Time: {current_time_str} | Last Run: {last_run_date}")
 
-    provider = os.getenv("AI_PROVIDER") or ui_cfg.get("provider") or "Gemini"
-    model = os.getenv("AI_MODEL_NAME") or ui_cfg.get("model") or "gemini-2.0-flash"
+    # Temporal Gate: Only run if it's past the time AND we haven't run today
+    if current_time_str < mailing_time_str:
+        logger.info("Too early. Skipping execution.")
+        return
+    
+    if last_run_date == today_str:
+        logger.info("Already ran today. Skipping execution.")
+        return
+
+    # 2. Configuration from DB (with ENV fallbacks)
+    provider = get_setting("ai_provider") or os.getenv("AI_PROVIDER", "Gemini")
+    model = get_setting("ai_model") or os.getenv("AI_MODEL_NAME", "gemini-2.0-flash")
     api_key = os.getenv("GEMINI_API_KEY") if provider == "Gemini" else os.getenv("OPENROUTER_API_KEY")
     
     if not api_key:
@@ -39,7 +52,7 @@ async def run_cron_mailing():
         return
 
     users = fetch_active_users()
-    logger.info(f"Found {len(users)} active users.")
+    logger.info(f"Initiating mailing for {len(users)} users.")
 
     for user in users:
         tg_id = user['tg_id']
@@ -63,16 +76,18 @@ async def run_cron_mailing():
                         result['nutr'], 
                         result['color']
                     )
-                    logger.info(f"Successfully sent and logged for {user['name']}")
+                    logger.info(f"Successfully sent for {user['name']}")
                 else:
-                    logger.error(f"Failed to send Telegram message to {user['name']}")
+                    logger.error(f"Failed to send to {user['name']}")
             else:
-                logger.error(f"Failed to generate AI content for {user['name']}")
+                logger.error(f"Failed to generate for {user['name']}")
                 
         except Exception as e:
             logger.error(f"Error processing {user['name']}: {e}")
             
-    logger.info("--- Daily Automated Mailing Finished ---")
+    # 3. Update Last Run
+    set_setting("last_run_date", today_str)
+    logger.info(f"--- Daily Mailing Finished. Last run marked as {today_str} ---")
 
 if __name__ == "__main__":
     asyncio.run(run_cron_mailing())

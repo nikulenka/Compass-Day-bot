@@ -22,10 +22,56 @@ def get_db_connection():
             database=dbname,
             timeout=20
         )
+        # Ensure tables exist
+        ensure_settings_table(conn)
         return conn
     except Exception as e:
         logging.error(f"Error connecting to database: {e}")
         return None
+
+def ensure_settings_table(conn):
+    """Creates the app_settings table if it doesn't exist."""
+    try:
+        conn.run("""
+            CREATE TABLE IF NOT EXISTS app_settings (
+                setting_key VARCHAR(100) PRIMARY KEY,
+                setting_value TEXT,
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+    except Exception as e:
+        logging.error(f"Error creating settings table: {e}")
+
+def get_setting(key, default=None):
+    """Retrieves a setting from the DB."""
+    conn = get_db_connection()
+    if not conn: return default
+    try:
+        rows = conn.run("SELECT setting_value FROM app_settings WHERE setting_key = :key", key=key)
+        if rows:
+            return rows[0][0]
+        return default
+    except Exception as e:
+        logging.error(f"Error getting setting {key}: {e}")
+        return default
+    finally:
+        conn.close()
+
+def set_setting(key, value):
+    """Upserts a setting in the DB."""
+    conn = get_db_connection()
+    if not conn: return
+    try:
+        conn.run("""
+            INSERT INTO app_settings (setting_key, setting_value, updated_at)
+            VALUES (:key, :val, NOW())
+            ON CONFLICT (setting_key) DO UPDATE 
+            SET setting_value = EXCLUDED.setting_value, updated_at = NOW()
+        """, key=key, val=str(value))
+    except Exception as e:
+        logging.error(f"Error setting {key}: {e}")
+    finally:
+        conn.close()
 
 def fetch_active_users():
     conn = get_db_connection()

@@ -10,32 +10,26 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-from database import fetch_active_users, log_daily_mailing, get_db_connection, fetch_recent_logs
+from database import fetch_active_users, log_daily_mailing, get_db_connection, fetch_recent_logs, get_setting, set_setting
 from ai_service import generate_daily_content
 from telegram_service import send_telegram_message, get_bot_status
 import datetime
 
 st.set_page_config(page_title="Compass-Day Control Panel", page_icon="🧭", layout="wide")
 
-# --- Constants & Config ---
-CONFIG_FILE = "config_ui.json"
-
-def load_config():
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            return json.load(f)
+# --- Persistent Settings Helpers ---
+def load_all_settings():
+    """Loads settings from DB into session state."""
     return {
-        "provider": os.getenv("AI_PROVIDER", "Gemini"),
-        "model": os.getenv("AI_MODEL_NAME", "gemini-2.0-flash")
+        "provider": get_setting("ai_provider", "Gemini"),
+        "model": get_setting("ai_model", "gemini-2.0-flash"),
+        "mailing_time": get_setting("mailing_time", "19:15"),
+        "last_run": get_setting("last_run_date", "")
     }
-
-def save_config(config):
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(config, f)
 
 # Initialize Session State
 if 'config' not in st.session_state:
-    st.session_state.config = load_config()
+    st.session_state.config = load_all_settings()
 
 # --- Custom Styling ---
 st.markdown("""
@@ -49,7 +43,7 @@ st.markdown("""
 
 # --- Sidebar Management ---
 st.sidebar.title("🧭 Compass-Day")
-page = st.sidebar.radio("Навигация", ["📊 Дашборд", "📜 История рассылок", "⚙️ Настройки AI"])
+page = st.sidebar.radio("Навигация", ["📊 Дашборд", "📜 История рассылок", "⚙️ Настройки System"])
 
 # --- Logging setup for Streamlit (Global) ---
 if 'logs' not in st.session_state:
@@ -68,27 +62,37 @@ logger.addHandler(StreamlitLogHandler())
 # ==========================================
 # PAGE: SETTINGS
 # ==========================================
-if page == "⚙️ Настройки AI":
-    st.title("⚙️ Настройки AI")
-    st.write("Эти настройки сохраняются локально и используются для рассылки.")
+if page == "⚙️ Настройки System":
+    st.title("⚙️ Системные настройки")
+    st.write("Эти настройки сохраняются в базу данных и используются автоматизацией.")
     
     col1, col2 = st.columns(2)
     with col1:
+        st.subheader("AI Конфигурация")
         new_provider = st.selectbox(
             "Провайдер", ["Gemini", "OpenRouter"], 
             index=0 if st.session_state.config['provider'] == "Gemini" else 1
         )
         new_model = st.text_input("Название модели", value=st.session_state.config['model'])
+        
+        st.divider()
+        st.subheader("⌚️ Расписание")
+        new_time = st.text_input("Время рассылки (HH:MM)", value=st.session_state.config['mailing_time'])
+        st.caption("Бот будет проверять это время каждые 30 минут через GitHub Actions.")
     
     with col2:
-        st.info("💡 OpenRouter позволяет использовать Claude 3, GPT-4 и другие модели.")
-        st.warning("⚠️ Убедитесь, что соответствующие ключи (GEMINI_API_KEY / OPENROUTER_API_KEY) прописаны в .env или в Secrets GitHub.")
+        st.info("💡 Настройки сохраняются в Postgres. Это позволяет интерфейсу и фоновым скриптам работать синхронно.")
+        st.warning("⚠️ Время указывается в вашем локальном часовом поясе (Belgrade/Europe).")
 
-    if st.button("💾 Сохранить конфигурацию"):
+    if st.button("💾 Сохранить всё в БД"):
+        set_setting("ai_provider", new_provider)
+        set_setting("ai_model", new_model)
+        set_setting("mailing_time", new_time)
+        
         st.session_state.config['provider'] = new_provider
         st.session_state.config['model'] = new_model
-        save_config(st.session_state.config)
-        st.success("Конфигурация сохранена!")
+        st.session_state.config['mailing_time'] = new_time
+        st.success("Все настройки сохранены в базу данных!")
 
 # ==========================================
 # PAGE: HISTORY
@@ -121,7 +125,7 @@ else:
     
     # 1. System Health
     st.subheader("📡 Статус систем")
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     
     # DB Status
     try:
@@ -144,6 +148,9 @@ else:
     api_key = os.getenv("GEMINI_API_KEY") if ai_p == "Gemini" else os.getenv("OPENROUTER_API_KEY")
     if api_key: c3.metric(f"AI ({ai_p})", "Ready", delta=st.session_state.config['model'])
     else: c3.metric(f"AI ({ai_p})", "Missing Key", delta_color="inverse")
+
+    # Schedule Status
+    c4.metric("След. рассылка", st.session_state.config['mailing_time'], delta=f"Last: {st.session_state.config['last_run'][:10]}")
 
     st.divider()
 
