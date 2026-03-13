@@ -100,3 +100,34 @@ def fetch_user_history(tg_id, days=3):
         return ""
     finally:
         conn.close()
+
+def fetch_recent_logs(limit=20):
+    """Fetches recent mailing logs for the UI."""
+    conn = get_db_connection()
+    if not conn:
+        return []
+    try:
+        rows = conn.run("""
+            SELECT l.created_at, u.name, l.psychologist_output, l.stylist_output, l.nutritionist_output, l.color_hex
+            FROM daily_logs l
+            JOIN users u ON l.user_id = u.tg_id
+            ORDER BY l.created_at DESC
+            LIMIT :lim
+        """, lim=limit)
+        
+        logs = []
+        for r in rows:
+            logs.append({
+                'date': r[0],
+                'name': r[1],
+                'psych': r[2],
+                'stylist': r[3],
+                'nutr': r[4],
+                'color': r[5]
+            })
+        return logs
+    except Exception as e:
+        logging.error(f"Error fetching logs: {e}")
+        return []
+    finally:
+        conn.close()

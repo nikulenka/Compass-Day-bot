@@ -2,10 +2,11 @@ name: Daily Automated Mailing
 
 on:
   schedule:
-    # Run at 21:15 Serbia time (which is usually UTC+1 or UTC+2 depending on DST)
-    # 21:15 Serbia = 20:15 UTC (Winter) / 19:15 UTC (Summer)
-    # Adjust cron according to your preference. Here it's 20:15 UTC:
-    - cron: '15 20 * * *'
+    # Run at 19:15 Serbia time (Winter: UTC+1, Summer: UTC+2)
+    # Winter: 19:15 - 1 = 18:15 UTC
+    # Summer: 19:15 - 2 = 17:15 UTC
+    # Setting to 18:15 UTC for now.
+    - cron: '15 18 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:

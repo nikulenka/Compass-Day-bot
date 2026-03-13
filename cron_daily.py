@@ -22,9 +22,16 @@ async def run_cron_mailing():
     """Main entry point for the daily automated mailing."""
     logger.info("--- Starting Daily Automated Mailing ---")
     
-    # Configuration from environment (set in GitHub Secrets/Environment)
-    provider = os.getenv("AI_PROVIDER", "Gemini")
-    model = os.getenv("AI_MODEL_NAME", "gemini-2.0-flash")
+    # Configuration: Priority 1: ENV (GitHub Secrets), Priority 2: config_ui.json (Streamlit), Priority 3: Defaults
+    import json
+    ui_cfg = {}
+    if os.path.exists("config_ui.json"):
+        try:
+            with open("config_ui.json", "r") as f: ui_cfg = json.load(f)
+        except: pass
+
+    provider = os.getenv("AI_PROVIDER") or ui_cfg.get("provider") or "Gemini"
+    model = os.getenv("AI_MODEL_NAME") or ui_cfg.get("model") or "gemini-2.0-flash"
     api_key = os.getenv("GEMINI_API_KEY") if provider == "Gemini" else os.getenv("OPENROUTER_API_KEY")
     
     if not api_key:
