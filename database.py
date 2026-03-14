@@ -82,7 +82,7 @@ def fetch_active_users():
         rows = conn.run("""
             SELECT tg_id, name, birth_date, occupation 
             FROM users 
-            WHERE onboarding_step = 'completed'
+            WHERE onboarding_step = 'completed' AND gdpr_status = TRUE
         """)
         users = []
         for r in rows:
