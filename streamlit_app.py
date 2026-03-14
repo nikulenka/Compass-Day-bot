@@ -27,6 +27,26 @@ def load_all_settings():
         "last_run": str(get_setting("last_run_date", "") or "")
     }
 
+# --- Logging setup for Streamlit (Global) ---
+# MUST BE DONE BEFORE ANY DB OR AI CALLS!
+_STREAMLIT_LOGS = []
+
+class StreamlitLogHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            _STREAMLIT_LOGS.append(msg)
+            # Keep only last 50
+            if len(_STREAMLIT_LOGS) > 50:
+                _STREAMLIT_LOGS.pop(0)
+        except Exception:
+            pass
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+for h in logger.handlers[:]: logger.removeHandler(h)
+logger.addHandler(StreamlitLogHandler())
+
 # Initialize Session State - Robust Check
 REQUIRED_KEYS = ["provider", "model", "mailing_time", "last_run"]
 if 'config' not in st.session_state or any(k not in st.session_state.config for k in REQUIRED_KEYS):
@@ -45,24 +65,6 @@ st.markdown("""
 # --- Sidebar Management ---
 st.sidebar.title("🧭 Compass-Day")
 page = st.sidebar.radio("Навигация", ["📊 Дашборд", "📜 История рассылок", "⚙️ Настройки System"])
-
-_STREAMLIT_LOGS = []
-
-class StreamlitLogHandler(logging.Handler):
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            _STREAMLIT_LOGS.append(msg)
-            # Keep only last 50
-            if len(_STREAMLIT_LOGS) > 50:
-                _STREAMLIT_LOGS.pop(0)
-        except Exception:
-            pass
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-for h in logger.handlers[:]: logger.removeHandler(h)
-logger.addHandler(StreamlitLogHandler())
 
 # ==========================================
 # PAGE: SETTINGS
