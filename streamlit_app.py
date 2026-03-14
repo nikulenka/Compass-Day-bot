@@ -46,17 +46,16 @@ st.markdown("""
 st.sidebar.title("🧭 Compass-Day")
 page = st.sidebar.radio("Навигация", ["📊 Дашборд", "📜 История рассылок", "⚙️ Настройки System"])
 
-# --- Logging setup for Streamlit (Global) ---
-if 'logs' not in st.session_state:
-    st.session_state.logs = []
+_STREAMLIT_LOGS = []
 
 class StreamlitLogHandler(logging.Handler):
     def emit(self, record):
         try:
             msg = self.format(record)
-            if 'logs' not in st.session_state:
-                st.session_state.logs = []
-            st.session_state.logs.append(msg)
+            _STREAMLIT_LOGS.append(msg)
+            # Keep only last 50
+            if len(_STREAMLIT_LOGS) > 50:
+                _STREAMLIT_LOGS.pop(0)
         except Exception:
             pass
 
@@ -194,5 +193,5 @@ else:
 
     with col_logs:
         st.subheader("📋 Системный лог (текущий)")
-        log_text = "\n".join(st.session_state.get('logs', [])[-15:])
+        log_text = "\n".join(_STREAMLIT_LOGS[-15:])
         st.code(log_text if log_text else "Логи отсутствуют...")
