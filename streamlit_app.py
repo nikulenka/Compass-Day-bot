@@ -52,8 +52,13 @@ if 'logs' not in st.session_state:
 
 class StreamlitLogHandler(logging.Handler):
     def emit(self, record):
-        msg = self.format(record)
-        st.session_state.logs.append(msg)
+        try:
+            msg = self.format(record)
+            if 'logs' not in st.session_state:
+                st.session_state.logs = []
+            st.session_state.logs.append(msg)
+        except Exception:
+            pass
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
