@@ -11,6 +11,10 @@ from database import fetch_active_users, log_daily_mailing, get_setting, set_set
 from ai_service import generate_daily_content
 from telegram_service import send_telegram_message
 from datetime import datetime
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo # For python < 3.9 if needed, though 3.9 has it natively
 
 # Setup logging
 logging.basicConfig(
@@ -27,11 +31,12 @@ async def run_cron_mailing():
     mailing_time_str = get_setting("mailing_time", "19:15")
     last_run_date = get_setting("last_run_date", "")
     
-    now = datetime.now()
+    belgrade_tz = ZoneInfo("Europe/Belgrade")
+    now = datetime.now(belgrade_tz)
     today_str = now.strftime("%Y-%m-%d")
     current_time_str = now.strftime("%H:%M")
     
-    logger.info(f"Target Time: {mailing_time_str} | Current Time: {current_time_str} | Last Run: {last_run_date}")
+    logger.info(f"Target Time: {mailing_time_str} | Current Time (Belgrade): {current_time_str} | Last Run: {last_run_date}")
 
     # Temporal Gate: Only run if it's past the time AND we haven't run today
     if current_time_str < mailing_time_str:
