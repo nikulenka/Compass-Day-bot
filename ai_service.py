@@ -102,6 +102,15 @@ async def generate_daily_content(user_data, provider="Gemini", api_key=None, mod
         # Final HTML Cleanup for Telegram entities
         final_html = clean_html(data.get('telegram_html', ''))
         
+        # Append expert contacts block
+        contacts_block = (
+            "\n\n<b>Ваши эксперты:</b>\n"
+            "- психолог <a href=\"https://t.me/Samira_soul\">Самира</a>\n"
+            "- стилист <a href=\"https://t.me/nepravila_sveta\">Света</a> (<a href=\"https://t.me/stilnaya_evropa\">канал</a>)\n"
+            "- нутрициолог <a href=\"https://t.me/murzichliza\">Лиза</a> (<a href=\"https://t.me/plastica_l\">канал</a>)"
+        )
+        final_html += contacts_block
+        
         return {
             'html': final_html,
             'psych': data.get('psychologist_output', ''),
