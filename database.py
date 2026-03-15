@@ -7,7 +7,10 @@ def get_db_connection():
     try:
         raw_host = os.getenv("DB_HOST", "compass-day-vitalyn.db-msk0.amvera.tech")
         clean_host = raw_host.replace("http://", "").replace("https://", "").split("/")[0].split(":")[0]
-        port = int(os.getenv("DB_PORT", "5432"))
+        
+        raw_port = os.getenv("DB_PORT", "")
+        port = int(raw_port) if raw_port.strip() else 5432
+        
         user = os.getenv("DB_USER", "compass-admin")
         password = os.getenv("DB_PASSWORD", "Land40Us")
         dbname = os.getenv("DB_NAME", "Compass-Day-DB")
