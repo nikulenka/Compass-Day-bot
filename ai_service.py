@@ -99,8 +99,18 @@ async def generate_daily_content(user_data, provider="Gemini", api_key=None, mod
         json_str = raw_response.replace('```json', '').replace('```', '').strip()
         data = json.loads(json_str)
         
+        raw_html = data.get('telegram_html', '')
+        color_hex = data.get('color_hex', '')
+        
+        # Make the color hex a link
+        if color_hex and color_hex.startswith('#') and color_hex in raw_html:
+            # Using %23 for the # symbol in the URL is safer for Telegram link parsing
+            encoded_color = color_hex.replace('#', '%23')
+            color_link = f'<a href="https://htmlcolorcodes.com/color-picker/{encoded_color}">{color_hex}</a>'
+            raw_html = raw_html.replace(color_hex, color_link)
+        
         # Final HTML Cleanup for Telegram entities
-        final_html = clean_html(data.get('telegram_html', ''))
+        final_html = clean_html(raw_html)
         
         # Append expert contacts block
         contacts_block = (
