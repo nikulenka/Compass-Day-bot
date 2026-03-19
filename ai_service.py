@@ -104,9 +104,8 @@ async def generate_daily_content(user_data, provider="Gemini", api_key=None, mod
         
         # Make the color hex a link
         if color_hex and color_hex.startswith('#') and color_hex in raw_html:
-            # Using %23 for the # symbol in the URL is safer for Telegram link parsing
-            encoded_color = color_hex.replace('#', '%23')
-            color_link = f'<a href="https://htmlcolorcodes.com/color-picker/{encoded_color}">{color_hex}</a>'
+            # Use the raw # symbol as a fragment identifier for htmlcolorcodes.com
+            color_link = f'<a href="https://htmlcolorcodes.com/color-picker/{color_hex}">{color_hex}</a>'
             raw_html = raw_html.replace(color_hex, color_link)
         
         # Final HTML Cleanup for Telegram entities
