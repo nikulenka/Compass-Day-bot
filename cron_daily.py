@@ -72,7 +72,7 @@ async def run_cron_mailing():
             )
             
             if result and result.get('html'):
-                success = await send_telegram_message(tg_id, result['html'])
+                success = await send_telegram_message(tg_id, result['html'], color_hex=result.get('color'))
                 if success:
                     log_daily_mailing(
                         tg_id, 

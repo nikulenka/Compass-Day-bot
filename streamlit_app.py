@@ -179,7 +179,7 @@ else:
                     user, provider=ai_p, api_key=api_key, model_name=st.session_state.config['model']
                 )
                 if res and res.get('html'):
-                    ok = await send_telegram_message(user['tg_id'], res['html'])
+                    ok = await send_telegram_message(user['tg_id'], res['html'], color_hex=res.get('color'))
                     if ok:
                         log_daily_mailing(user['tg_id'], res['psych'], res['stylist'], res['nutr'], res['color'])
                         st.success(f"✅ Готово: {user['name']}")
