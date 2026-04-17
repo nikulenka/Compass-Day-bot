@@ -59,6 +59,14 @@ async def run_cron_mailing():
     users = fetch_active_users()
     logger.info(f"Initiating mailing for {len(users)} users.")
 
+    if not users:
+        logger.info("No active users found. Marking as run for today.")
+        set_setting("last_run_date", today_str)
+        return
+
+    successful_sends = 0
+    total_users = len(users)
+
     for user in users:
         tg_id = user['tg_id']
         logger.info(f"Processing: {user['name']} ({tg_id})")
@@ -81,6 +89,7 @@ async def run_cron_mailing():
                         result['nutr'], 
                         result['color']
                     )
+                    successful_sends += 1
                     logger.info(f"Successfully sent for {user['name']}")
                 else:
                     logger.error(f"Failed to send to {user['name']}")
@@ -90,9 +99,15 @@ async def run_cron_mailing():
         except Exception as e:
             logger.error(f"Error processing {user['name']}: {e}")
             
-    # 3. Update Last Run
-    set_setting("last_run_date", today_str)
-    logger.info(f"--- Daily Mailing Finished. Last run marked as {today_str} ---")
+    # 3. Update Last Run - Only if at least one was successful
+    # This prevents marking the day as 'run' if a systemic error (like API leak) occurred.
+    if successful_sends > 0:
+        set_setting("last_run_date", today_str)
+        logger.info(f"--- Daily Mailing Finished. {successful_sends}/{total_users} sent. Last run marked as {today_str} ---")
+    else:
+        logger.error(f"--- Daily Mailing FAILED. 0/{total_users} sent. Status NOT updated. ---")
+        # Exit with error code to notify GitHub Actions
+        exit(1)
 
 if __name__ == "__main__":
     asyncio.run(run_cron_mailing())
