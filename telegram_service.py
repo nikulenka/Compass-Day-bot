@@ -22,17 +22,21 @@ async def send_telegram_message(tg_id, html_content, color_hex=None):
         if color_hex and isinstance(color_hex, str):
             clean_hex = color_hex.strip(' #')
             if len(clean_hex) in (3, 6):
-                photo_url = f"https://singlecolorimage.com/get/{clean_hex}/400x400"
-                await bot.send_photo(
-                    chat_id=tg_id,
-                    photo=photo_url,
-                    caption=f"🎨 Цвет дня от стилиста: #{clean_hex}"
-                )
+                try:
+                    photo_url = f"https://singlecolorimage.com/get/{clean_hex}/400x400"
+                    await bot.send_photo(
+                        chat_id=tg_id,
+                        photo=photo_url,
+                        caption=f"🎨 Цвет дня от стилиста: #{clean_hex}"
+                    )
+                except Exception as photo_err:
+                    logging.warning(f"Failed to send color photo to {tg_id}: {photo_err}")
         
         return True
     except Exception as e:
-        logging.error(f"Error sending Telegram message to {tg_id}: {e}")
+        logging.error(f"Telegram API Error for {tg_id}: {e}")
         return False
+
 
 async def get_bot_status():
     """Verify bot token and connection."""
@@ -40,9 +44,9 @@ async def get_bot_status():
     if not token:
         return False, "Token missing"
     try:
-        from telegram import Bot
         bot = Bot(token=token)
         me = await bot.get_me()
+
         return True, f"@{me.username}"
     except Exception as e:
         return False, str(e)

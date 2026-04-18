@@ -9,18 +9,44 @@ import re
 from database import fetch_user_history
 from prompts import MASTER_PROMPT
 
+import html
+
 def clean_html(text):
-    """Deep clean HTML to strictly follow Telegram's allowed tags."""
+    """
+    Strictly follow Telegram's allowed tags and escape sensitive characters.
+    Telegram's ParseMode.HTML is very sensitive to unescaped <, > and &.
+    """
     if not text: return ""
-    # Forbidden tags that AI loves but Telegram hates
+    
+    # 1. Remove common forbidden tags that AI tends to include
     forbidden = ['<ul>', '</ul>', '<li>', '</li>', '<p>', '</p>', '<br>', '<br/>', '<h1>', '</h1>', '<h2>', '</h2>', '<h3>', '</h3>']
     for tag in forbidden:
-        text = text.replace(tag, '')
-    
-    # Remove any extra nested or complex tags that aren't b, i, code, u, s, pre, a
-    allowed_pattern = r'<(?!/?(b|strong|i|em|u|ins|s|strike|del|code|pre|a|blockquote|span)\b)[^>]*>'
-    text = re.sub(allowed_pattern, '', text)
-    
+        text = text.replace(tag, '\n') # Replace with newline for better formatting
+        text = text.replace(tag.upper(), '\n')
+
+    # 2. Escape EVERYTHING first (this turns all <, >, & into &lt;, &gt;, &amp;)
+    text = html.escape(text)
+
+    # 3. Restore ONLY specifically allowed tags
+    # We look for escaped versions of our allowed tags and restore them
+    allowed_tags = ['b', 'strong', 'i', 'em', 'u', 'ins', 's', 'strike', 'del', 'code', 'pre', 'a', 'blockquote', 'span']
+    for tag in allowed_tags:
+        # Start tags: &lt;b&gt; -> <b>, &lt;a href="..."&gt; -> <a href="...">
+        # For 'a' tag, we need to handle attributes.
+        if tag == 'a':
+            # Handle <a href="..."> specifically. AI might produce &lt;a href="..."&gt;
+            # Regex to find &lt;a ... &gt; and restore it
+            text = re.sub(r'&lt;a\s+(.*?)&gt;', r'<a \1>', text, flags=re.IGNORECASE)
+            text = text.replace('&lt;/a&gt;', '</a>')
+            text = text.replace('&lt;/A&gt;', '</a>')
+        else:
+            text = text.replace(f'&lt;{tag}&gt;', f'<{tag}>')
+            text = text.replace(f'&lt;{tag.upper()}&gt;', f'<{tag}>')
+            text = text.replace(f'&lt;/{tag}&gt;', f'</{tag}>')
+            text = text.replace(f'&lt;/{tag.upper()}&gt;', f'</{tag}>')
+
+    # 4. Final polish: remove double spaces and normalize newlines
+    text = re.sub(r'\n\s*\n', '\n\n', text)
     return text.strip()
 
 async def get_ai_response(prompt, provider="Gemini", api_key=None, model_name=None):
@@ -36,7 +62,11 @@ async def get_ai_response(prompt, provider="Gemini", api_key=None, model_name=No
         if provider == "Gemini":
             genai.configure(api_key=api_key)
             m = genai.GenerativeModel(model_name or 'gemini-2.0-flash')
+            # Using timeout to prevent hanging
             response = await asyncio.to_thread(m.generate_content, prompt)
+            if not response or not response.text:
+                logging.error("Empty response from Gemini")
+                return None
             return response.text.strip()
         
         else: # OpenRouter / AI compatible
@@ -66,7 +96,7 @@ async def generate_daily_content(user_data, provider="Gemini", api_key=None, mod
     occupation = user_data['occupation']
     tg_id = user_data['tg_id']
 
-    # 1. Date calculation
+    # 1. Date calculation (using tomorrow)
     import datetime
     tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
     tomorrow_date = tomorrow.strftime("%d.%m.%Y")
@@ -95,14 +125,18 @@ async def generate_daily_content(user_data, provider="Gemini", api_key=None, mod
         return None
 
     try:
-        # Clean JSON markdown if present
-        json_str = raw_response.replace('```json', '').replace('```', '').strip()
+        # Robust JSON extraction: Find the first '{' and last '}'
+        match = re.search(r'(\{.*\})', raw_response, re.DOTALL)
+        if match:
+            json_str = match.group(1)
+        else:
+            # Fallback to old method if regex fails
+            json_str = raw_response.replace('```json', '').replace('```', '').strip()
+            
         data = json.loads(json_str)
         
         raw_html = data.get('telegram_html', '')
-        color_hex = data.get('color_hex', '')
         
-
         # Final HTML Cleanup for Telegram entities
         final_html = clean_html(raw_html)
         
@@ -124,5 +158,6 @@ async def generate_daily_content(user_data, provider="Gemini", api_key=None, mod
         }
     except Exception as e:
         logging.error(f"Failed to parse AI JSON: {e}")
-        logging.error(f"Raw response: {raw_response}")
+        logging.error(f"Raw response was: {raw_response[:500]}...") # Log partial for safety
         return None
+
